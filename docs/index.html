@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teachable Machine - Subir Imagen</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            text-align: center;
+        }
+        #image-preview {
+            max-width: 300px;
+            max-height: 300px;
+            margin: 20px auto;
+            display: none;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 5px;
+        }
+        #label-container {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        #status {
+            color: #555;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Teachable Machine Image Model (Selector de Archivos)</h2>
+    <p id="status">Cargando modelo de Inteligencia Artificial, por favor espera...</p>
+    
+    <!-- Botón para subir la imagen (inhabilitado hasta que cargue el modelo) -->
+    <input type="file" id="image-selector" accept="image/*" disabled>
+
+    <!-- Contenedor donde se mostrará la foto que subas -->
+    <div>
+        <img id="image-preview" alt="Vista previa de la imagen cargada">
+    </div>
+
+    <!-- Contenedor para mostrar los resultados de la predicción -->
+    <div id="label-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <script type="text/javascript">
+        
+        // Enlace de tu modelo guardado en la nube
+        const URL = "https://teachablemachine.withgoogle.com/models/Fkt0Qs7ST/";
+
+        let model, labelContainer, maxPredictions;
+        const imageSelector = document.getElementById("image-selector");
+        const imagePreview = document.getElementById("image-preview");
+
+        // 1. Cargar el modelo de forma automática al abrir la página
+        async function loadModel() {
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+
+            labelContainer = document.getElementById("label-container");
+
+            // Habilitar el botón de subida una vez el modelo esté listo
+            imageSelector.disabled = false;
+            document.getElementById("status").innerText = "¡Modelo cargado con éxito! Selecciona una imagen de tu equipo.";
+        }
+
+        // Ejecutar la carga del modelo al abrir la web
+        loadModel();
+
+        // 2. Detectar cuándo el usuario selecciona un archivo local
+        imageSelector.addEventListener("change", function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = "block"; // Mostrar la imagen en pantalla
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // 3. Cuando la imagen termine de renderizarse en la pantalla, ejecutar la predicción
+        imagePreview.onload = async function() {
+            await predict();
+        };
+
+        // 4. Analizar la imagen con el modelo de Teachable Machine
+        async function predict() {
+            // El método predict acepta directamente etiquetas HTML del tipo <img>
+            const prediction = await model.predict(imagePreview);
+            
+            // Limpiar resultados anteriores
+            labelContainer.innerHTML = "";
+
+            // Mostrar el porcentaje de coincidencia para cada clase
+            for (let i = 0; i < maxPredictions; i++) {
+                const porcentaje = (prediction[i].probability * 100).toFixed(2);
+                const classPrediction = prediction[i].className + ": " + porcentaje + "%";
+                
+                const div = document.createElement("div");
+                div.innerHTML = classPrediction;
+                labelContainer.appendChild(div);
+            }
+        }
+    </script>
+
+</body>
+</html>
