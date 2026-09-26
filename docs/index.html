@@ -1,117 +1,1101 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teachable Machine - Subir Imagen</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 30px;
-            text-align: center;
-        }
-        #image-preview {
-            max-width: 300px;
-            max-height: 300px;
-            margin: 20px auto;
-            display: none;
-            border: 2px dashed #ccc;
-            border-radius: 8px;
-            padding: 5px;
-        }
-        #label-container {
-            margin-top: 20px;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-        #status {
-            color: #555;
-            font-style: italic;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>NeuroVision AI</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+
+* {
+    box-sizing: border-box;
+}
+
+:root {
+    --cyan: #00f6ff;
+    --blue: #287bff;
+    --purple: #9b4dff;
+    --green: #00ff9d;
+    --red: #ff3864;
+    --bg: #030611;
+    --card: rgba(12, 20, 42, .72);
+    --border: rgba(0, 246, 255, .22);
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Inter, sans-serif;
+    color: white;
+    background:
+        radial-gradient(circle at 15% 20%, rgba(0,246,255,.12), transparent 30%),
+        radial-gradient(circle at 85% 70%, rgba(155,77,255,.14), transparent 35%),
+        linear-gradient(135deg, #02040d, #071026 50%, #030611);
+    overflow-x: hidden;
+}
+
+/* Fondo de partículas */
+
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: .25;
+
+    background-image:
+        linear-gradient(rgba(0,246,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,246,255,.04) 1px, transparent 1px);
+
+    background-size: 45px 45px;
+}
+
+/* HEADER */
+
+header {
+    padding: 35px 8% 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    font-family: Orbitron, sans-serif;
+    letter-spacing: 3px;
+    font-size: 18px;
+}
+
+.logo span {
+    color: var(--cyan);
+}
+
+.system-status {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    font-size: 12px;
+    color: #91a4c7;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ffb000;
+    box-shadow: 0 0 12px #ffb000;
+}
+
+.status-dot.online {
+    background: var(--green);
+    box-shadow: 0 0 15px var(--green);
+}
+
+/* CONTENEDOR */
+
+.container {
+    width: min(1200px, 92%);
+    margin: 35px auto 70px;
+}
+
+.hero {
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+.hero h1 {
+    font-family: Orbitron, sans-serif;
+    font-size: clamp(30px, 5vw, 58px);
+    margin: 0;
+
+    background: linear-gradient(
+        90deg,
+        white,
+        var(--cyan),
+        #8d7aff,
+        white
+    );
+
+    background-size: 300%;
+
+    /* Compatibilidad */
+    -webkit-background-clip: text;
+    background-clip: text;
+
+    /* Hace transparente el relleno del texto */
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+
+    animation: gradientMove 6s infinite linear;
+}
+
+
+@keyframes gradientMove {
+    0% { background-position: 0%; }
+    100% { background-position: 300%; }
+}
+
+.hero p {
+    color: #7183a8;
+    margin-top: 12px;
+}
+
+/* PANEL PRINCIPAL */
+
+.dashboard {
+    display: grid;
+    grid-template-columns: 1.3fr .9fr;
+    gap: 22px;
+}
+
+.panel {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    backdrop-filter: blur(25px);
+    box-shadow:
+        0 25px 80px rgba(0,0,0,.4),
+        inset 0 1px rgba(255,255,255,.04);
+
+    overflow: hidden;
+}
+
+.panel::before {
+    content: "";
+    position: absolute;
+    width: 150px;
+    height: 1px;
+    top: 0;
+    left: 20%;
+    background: var(--cyan);
+    box-shadow: 0 0 20px var(--cyan);
+}
+
+/* VISOR */
+
+.viewer {
+    padding: 22px;
+}
+
+.viewer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.section-title {
+    font-family: Orbitron;
+    font-size: 12px;
+    color: #8fa7cc;
+    letter-spacing: 2px;
+}
+
+.ai-badge {
+    color: var(--green);
+    border: 1px solid rgba(0,255,157,.3);
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    letter-spacing: 1px;
+}
+
+/* DROPZONE */
+
+.drop-zone {
+    height: 500px;
+    border: 1px dashed rgba(0,246,255,.25);
+    border-radius: 18px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    position: relative;
+    overflow: hidden;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(0,246,255,.06),
+            transparent 65%
+        );
+
+    cursor: pointer;
+    transition: .3s;
+}
+
+.drop-zone:hover,
+.drop-zone.dragover {
+    border-color: var(--cyan);
+    box-shadow:
+        inset 0 0 50px rgba(0,246,255,.06),
+        0 0 30px rgba(0,246,255,.08);
+}
+
+/* ESQUINAS DEL VISOR */
+
+.corner {
+    position: absolute;
+    width: 35px;
+    height: 35px;
+    border-color: var(--cyan);
+}
+
+.c1 {
+    top: 15px;
+    left: 15px;
+    border-top: 2px solid;
+    border-left: 2px solid;
+}
+
+.c2 {
+    top: 15px;
+    right: 15px;
+    border-top: 2px solid;
+    border-right: 2px solid;
+}
+
+.c3 {
+    bottom: 15px;
+    left: 15px;
+    border-bottom: 2px solid;
+    border-left: 2px solid;
+}
+
+.c4 {
+    bottom: 15px;
+    right: 15px;
+    border-bottom: 2px solid;
+    border-right: 2px solid;
+}
+
+/* IMAGEN */
+
+#image-preview {
+    max-width: 85%;
+    max-height: 85%;
+    object-fit: contain;
+    display: none;
+    border-radius: 10px;
+
+    filter:
+        drop-shadow(0 0 25px rgba(0,246,255,.2));
+
+    transition: .4s;
+}
+
+/* MENSAJE INICIAL */
+
+.upload-message {
+    text-align: center;
+    color: #7183a8;
+}
+
+.upload-icon {
+    width: 75px;
+    height: 75px;
+    margin: auto auto 20px;
+
+    border-radius: 50%;
+    border: 1px solid rgba(0,246,255,.3);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: var(--cyan);
+    font-size: 28px;
+
+    box-shadow:
+        0 0 30px rgba(0,246,255,.08);
+}
+
+.upload-message strong {
+    display: block;
+    color: white;
+    margin-bottom: 8px;
+}
+
+/* ESCÁNER */
+
+.scanner {
+    position: absolute;
+    left: 5%;
+    width: 90%;
+    height: 2px;
+
+    background: var(--cyan);
+    box-shadow:
+        0 0 8px var(--cyan),
+        0 0 25px var(--cyan);
+
+    display: none;
+    z-index: 5;
+}
+
+.scanning .scanner {
+    display: block;
+    animation: scan 2s infinite ease-in-out;
+}
+
+@keyframes scan {
+    0% { top: 10%; }
+    50% { top: 90%; }
+    100% { top: 10%; }
+}
+
+.scanning #image-preview {
+    filter:
+        brightness(1.15)
+        contrast(1.1)
+        drop-shadow(0 0 30px var(--cyan));
+}
+
+/* INPUT */
+
+#image-selector {
+    display: none;
+}
+
+/* PANEL RESULTADOS */
+
+.results {
+    padding: 25px;
+}
+
+.results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+.results-header h2 {
+    font-family: Orbitron;
+    font-size: 15px;
+    margin: 0;
+}
+
+.ai-core {
+    width: 35px;
+    height: 35px;
+
+    border-radius: 50%;
+
+    border: 1px solid var(--cyan);
+
+    box-shadow:
+        0 0 10px var(--cyan),
+        inset 0 0 10px rgba(0,246,255,.4);
+
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    50% {
+        box-shadow:
+            0 0 30px var(--cyan),
+            inset 0 0 20px rgba(0,246,255,.5);
+    }
+}
+
+/* RESULTADOS */
+
+#label-container {
+    margin-top: 25px;
+}
+
+.empty-result {
+    color: #617394;
+    text-align: center;
+    padding: 80px 20px;
+    line-height: 1.8;
+}
+
+.result-item {
+    margin-bottom: 25px;
+}
+
+.result-top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 9px;
+}
+
+.result-name {
+    font-weight: 600;
+}
+
+.result-percent {
+    font-family: Orbitron;
+    color: var(--cyan);
+}
+
+.bar {
+    height: 8px;
+    border-radius: 20px;
+    background: rgba(255,255,255,.05);
+    overflow: hidden;
+}
+
+.bar-fill {
+    height: 100%;
+    width: 0;
+
+    border-radius: inherit;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--blue),
+            var(--cyan)
+        );
+
+    box-shadow: 0 0 15px var(--cyan);
+
+    transition: width 1.2s cubic-bezier(.2,.8,.2,1);
+}
+
+/* RESULTADO PRINCIPAL */
+
+.main-result {
+    margin-top: 35px;
+    padding: 22px;
+
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(0,246,255,.08),
+            rgba(155,77,255,.08)
+        );
+
+    border: 1px solid rgba(0,246,255,.15);
+
+    text-align: center;
+}
+
+.main-result small {
+    color: #687da5;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.main-result h3 {
+    font-family: Orbitron;
+    font-size: 22px;
+    margin: 10px 0 4px;
+    color: var(--cyan);
+}
+
+.main-result span {
+    font-size: 13px;
+    color: #91a4c7;
+}
+
+/* FOOTER */
+
+.footer {
+    text-align: center;
+    margin-top: 30px;
+    color: #4d5d7b;
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+/* RESPONSIVE */
+
+@media(max-width: 850px) {
+
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    .drop-zone {
+        height: 400px;
+    }
+
+    header {
+        padding-left: 5%;
+        padding-right: 5%;
+    }
+}
+
+</style>
 </head>
+
 <body>
 
-    <h2>Teachable Machine Image Model (Selector de Archivos)</h2>
-    <p id="status">Cargando modelo de Inteligencia Artificial, por favor espera...</p>
-    
-    <!-- Botón para subir la imagen (inhabilitado hasta que cargue el modelo) -->
-    <input type="file" id="image-selector" accept="image/*" disabled>
+<header>
 
-    <!-- Contenedor donde se mostrará la foto que subas -->
-    <div>
-        <img id="image-preview" alt="Vista previa de la imagen cargada">
+    <div class="logo">
+        NEURO<span>VISION</span> // AI
     </div>
 
-    <!-- Contenedor para mostrar los resultados de la predicción -->
-    <div id="label-container"></div>
+    <div class="system-status">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">INICIALIZANDO IA</span>
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-    <script type="text/javascript">
-        
-        // Enlace de tu modelo guardado en la nube
-        const URL = "https://teachablemachine.withgoogle.com/models/Fkt0Qs7ST/";
+</header>
 
-        let model, labelContainer, maxPredictions;
-        const imageSelector = document.getElementById("image-selector");
-        const imagePreview = document.getElementById("image-preview");
 
-        // 1. Cargar el modelo de forma automática al abrir la página
-        async function loadModel() {
-            const modelURL = URL + "model.json";
-            const metadataURL = URL + "metadata.json";
+<main class="container">
 
-            model = await tmImage.load(modelURL, metadataURL);
-            maxPredictions = model.getTotalClasses();
+    <section class="hero">
 
-            labelContainer = document.getElementById("label-container");
+        <h1>VISION INTELLIGENCE</h1>
 
-            // Habilitar el botón de subida una vez el modelo esté listo
-            imageSelector.disabled = false;
-            document.getElementById("status").innerText = "¡Modelo cargado con éxito! Selecciona una imagen de tu equipo.";
+        <p>
+            Sistema de clasificación visual mediante inteligencia artificial
+        </p>
+
+    </section>
+
+
+    <section class="dashboard">
+
+
+        <!-- VISOR -->
+
+        <div class="panel viewer">
+
+            <div class="viewer-header">
+
+                <div class="section-title">
+                    VISUAL INPUT // 01
+                </div>
+
+                <div class="ai-badge">
+                    ● NEURAL ENGINE
+                </div>
+
+            </div>
+
+
+            <div
+                class="drop-zone"
+                id="drop-zone"
+            >
+
+                <div class="corner c1"></div>
+                <div class="corner c2"></div>
+                <div class="corner c3"></div>
+                <div class="corner c4"></div>
+
+
+                <div
+                    class="upload-message"
+                    id="upload-message"
+                >
+
+                    <div class="upload-icon">
+                        ＋
+                    </div>
+
+                    <strong>
+                        CARGAR IMAGEN
+                    </strong>
+
+                    <span>
+                        Arrastra un archivo aquí<br>
+                        o haz clic para seleccionar
+                    </span>
+
+                </div>
+
+
+                <img
+                    id="image-preview"
+                    alt="Imagen analizada"
+                >
+
+                <div class="scanner"></div>
+
+            </div>
+
+
+            <input
+                type="file"
+                id="image-selector"
+                accept="image/*"
+                disabled
+            >
+
+        </div>
+
+
+        <!-- RESULTADOS -->
+
+        <div class="panel results">
+
+            <div class="results-header">
+
+                <h2>
+                    ANÁLISIS NEURAL
+                </h2>
+
+                <div class="ai-core"></div>
+
+            </div>
+
+
+            <div id="label-container">
+
+                <div class="empty-result">
+
+                    <div style="font-size:30px; margin-bottom:15px;">
+                        ◉
+                    </div>
+
+                    Esperando señal visual...
+                    <br>
+                    <span style="font-size:11px;">
+                        Selecciona una imagen para iniciar el análisis
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="main-result"
+                id="main-result"
+                style="display:none;"
+            >
+
+                <small>
+                    Clasificación dominante
+                </small>
+
+                <h3 id="main-class">
+                    --
+                </h3>
+
+                <span id="main-confidence">
+                    --
+                </span>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <div class="footer">
+
+        NEUROVISION AI SYSTEM
+        &nbsp;•&nbsp;
+        TENSORFLOW ENGINE
+        &nbsp;•&nbsp;
+        REAL-TIME CLASSIFICATION
+
+    </div>
+
+</main>
+
+
+<script>
+
+const URL =
+"https://teachablemachine.withgoogle.com/models/Fkt0Qs7ST/";
+
+let model;
+let maxPredictions;
+
+const imageSelector =
+document.getElementById("image-selector");
+
+const imagePreview =
+document.getElementById("image-preview");
+
+const dropZone =
+document.getElementById("drop-zone");
+
+const uploadMessage =
+document.getElementById("upload-message");
+
+const labelContainer =
+document.getElementById("label-container");
+
+const statusText =
+document.getElementById("status-text");
+
+const statusDot =
+document.getElementById("status-dot");
+
+const mainResult =
+document.getElementById("main-result");
+
+const mainClass =
+document.getElementById("main-class");
+
+const mainConfidence =
+document.getElementById("main-confidence");
+
+
+/* =====================================
+   CARGAR MODELO
+===================================== */
+
+async function loadModel() {
+
+    try {
+
+        statusText.innerText =
+            "CARGANDO MODELO NEURAL";
+
+        const modelURL =
+            URL + "model.json";
+
+        const metadataURL =
+            URL + "metadata.json";
+
+        model =
+            await tmImage.load(
+                modelURL,
+                metadataURL
+            );
+
+        maxPredictions =
+            model.getTotalClasses();
+
+        imageSelector.disabled = false;
+
+        statusText.innerText =
+            "SISTEMA ONLINE";
+
+        statusDot.classList.add("online");
+
+    } catch(error) {
+
+        console.error(error);
+
+        statusText.innerText =
+            "ERROR DEL SISTEMA";
+
+        statusDot.style.background =
+            "#ff3864";
+
+        statusDot.style.boxShadow =
+            "0 0 15px #ff3864";
+
+    }
+
+}
+
+
+/* =====================================
+   ABRIR SELECTOR
+===================================== */
+
+dropZone.addEventListener(
+    "click",
+    () => {
+
+        if (!model) return;
+
+        imageSelector.click();
+
+    }
+);
+
+
+/* =====================================
+   SELECCIONAR ARCHIVO
+===================================== */
+
+imageSelector.addEventListener(
+    "change",
+    event => {
+
+        const file =
+            event.target.files[0];
+
+        if (!file) return;
+
+        processImage(file);
+
+    }
+);
+
+
+/* =====================================
+   DRAG & DROP
+===================================== */
+
+dropZone.addEventListener(
+    "dragover",
+    event => {
+
+        event.preventDefault();
+
+        dropZone.classList.add(
+            "dragover"
+        );
+
+    }
+);
+
+
+dropZone.addEventListener(
+    "dragleave",
+    () => {
+
+        dropZone.classList.remove(
+            "dragover"
+        );
+
+    }
+);
+
+
+dropZone.addEventListener(
+    "drop",
+    event => {
+
+        event.preventDefault();
+
+        dropZone.classList.remove(
+            "dragover"
+        );
+
+        const file =
+            event.dataTransfer.files[0];
+
+        if (!file) return;
+
+        if (!file.type.startsWith("image/")) {
+
+            alert(
+                "Selecciona un archivo de imagen."
+            );
+
+            return;
+
         }
 
-        // Ejecutar la carga del modelo al abrir la web
-        loadModel();
+        processImage(file);
 
-        // 2. Detectar cuándo el usuario selecciona un archivo local
-        imageSelector.addEventListener("change", function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+    }
+);
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                imagePreview.src = e.target.result;
-                imagePreview.style.display = "block"; // Mostrar la imagen en pantalla
-            };
-            reader.readAsDataURL(file);
-        });
 
-        // 3. Cuando la imagen termine de renderizarse en la pantalla, ejecutar la predicción
-        imagePreview.onload = async function() {
-            await predict();
-        };
+/* =====================================
+   PROCESAR IMAGEN
+===================================== */
 
-        // 4. Analizar la imagen con el modelo de Teachable Machine
-        async function predict() {
-            // El método predict acepta directamente etiquetas HTML del tipo <img>
-            const prediction = await model.predict(imagePreview);
-            
-            // Limpiar resultados anteriores
-            labelContainer.innerHTML = "";
+function processImage(file) {
 
-            // Mostrar el porcentaje de coincidencia para cada clase
-            for (let i = 0; i < maxPredictions; i++) {
-                const porcentaje = (prediction[i].probability * 100).toFixed(2);
-                const classPrediction = prediction[i].className + ": " + porcentaje + "%";
-                
-                const div = document.createElement("div");
-                div.innerHTML = classPrediction;
-                labelContainer.appendChild(div);
+    const reader =
+        new FileReader();
+
+    reader.onload = event => {
+
+        imagePreview.src =
+            event.target.result;
+
+        imagePreview.style.display =
+            "block";
+
+        uploadMessage.style.display =
+            "none";
+
+        dropZone.classList.add(
+            "scanning"
+        );
+
+        statusText.innerText =
+            "ANALIZANDO IMAGEN";
+
+    };
+
+    reader.readAsDataURL(file);
+
+}
+
+
+/* =====================================
+   CUANDO LA IMAGEN CARGA
+===================================== */
+
+imagePreview.onload = async () => {
+
+    await predict();
+
+};
+
+
+/* =====================================
+   PREDICCIÓN
+===================================== */
+
+async function predict() {
+
+    if (!model) return;
+
+    try {
+
+        const prediction =
+            await model.predict(
+                imagePreview
+            );
+
+        /*
+        Ordenar resultados
+        de mayor a menor
+        */
+
+        prediction.sort(
+            (a, b) =>
+                b.probability -
+                a.probability
+        );
+
+
+        labelContainer.innerHTML = "";
+
+
+        /*
+        Mostrar todas las clases
+        */
+
+        prediction.forEach(
+            (result, index) => {
+
+                const percentage =
+                    result.probability * 100;
+
+                const item =
+                    document.createElement(
+                        "div"
+                    );
+
+                item.className =
+                    "result-item";
+
+
+                item.innerHTML = `
+
+                    <div class="result-top">
+
+                        <span class="result-name">
+                            ${result.className}
+                        </span>
+
+                        <span class="result-percent">
+                            ${percentage.toFixed(2)}%
+                        </span>
+
+                    </div>
+
+                    <div class="bar">
+
+                        <div
+                            class="bar-fill"
+                            id="bar-${index}"
+                        ></div>
+
+                    </div>
+
+                `;
+
+                labelContainer.appendChild(
+                    item
+                );
+
+
+                /*
+                Animar barra
+                */
+
+                setTimeout(() => {
+
+                    document
+                        .getElementById(
+                            `bar-${index}`
+                        )
+                        .style.width =
+                            percentage + "%";
+
+                }, 100);
+
             }
-        }
-    </script>
+        );
+
+
+        /*
+        RESULTADO PRINCIPAL
+        */
+
+        const winner =
+            prediction[0];
+
+        const confidence =
+            winner.probability * 100;
+
+
+        mainResult.style.display =
+            "block";
+
+        mainClass.innerText =
+            winner.className;
+
+        mainConfidence.innerText =
+            confidence.toFixed(2) +
+            "% DE CONFIANZA";
+
+
+        /*
+        Estado del sistema
+        */
+
+        statusText.innerText =
+            "ANÁLISIS COMPLETADO";
+
+        dropZone.classList.remove(
+            "scanning"
+        );
+
+
+    } catch(error) {
+
+        console.error(error);
+
+        statusText.innerText =
+            "ERROR EN EL ANÁLISIS";
+
+        dropZone.classList.remove(
+            "scanning"
+        );
+
+    }
+
+}
+
+
+/* =====================================
+   INICIAR
+===================================== */
+
+loadModel();
+
+</script>
 
 </body>
 </html>
